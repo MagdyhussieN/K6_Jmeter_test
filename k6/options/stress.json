@@ -1,0 +1,12 @@
+{
+  "stages": [
+    { "duration": "1m",  "target": 100 },
+    { "duration": "2m",  "target": 200 },
+    { "duration": "1m",  "target": 400 },
+    { "duration": "30s", "target": 0   }
+  ],
+  "thresholds": {
+    "rabbitmq_publish_failures": ["rate<0.05"],
+    "rabbitmq_publish_duration_ms": ["p(95)<2000"]
+  }
+}

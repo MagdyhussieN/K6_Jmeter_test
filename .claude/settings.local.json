@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x /Users/mac/Desktop/loadTestK6JmeterTest/scripts/*.sh && touch /Users/mac/Desktop/loadTestK6JmeterTest/jmeter/results/.gitkeep)",
+      "Bash(docker --version && docker compose version)",
+      "Bash(docker compose:*)",
+      "Bash(open -a Docker && sleep 10 && docker info 2>&1 | head -5)",
+      "Bash(docker info:*)",
+      "Bash(curl -s http://localhost:3000/health && echo \"\" && curl -s -X POST http://localhost:3000/produce -H \"Content-Type: application/json\" -d '{\"message\":\"hello rabbitmq\",\"count\":3}' && echo \"\" && curl -s http://localhost:3000/consume?count=3)",
+      "Bash(curl -s \"http://localhost:3000/consume?count=3\")",
+      "Bash(which k6:*)",
+      "Bash(k6 run:*)",
+      "Bash(find /Users/mac/Desktop/loadTestK6JmeterTest -not -path \"*/node_modules/*\" -not -path \"*/.gitkeep\" | sort | sed 's|/Users/mac/Desktop/loadTestK6JmeterTest/||' | grep -v \"^$\")",
+      "Bash(which xk6:*)",
+      "Bash(which go:*)",
+      "Bash(go install:*)",
+      "Bash(find /root /Users/mac/go /Users/mac/Library /var/folders -name \"*.go\" -path \"*/xk6-amqp/*\" 2>/dev/null | grep -E \"\\(amqp|queue|exchange\\)\\\\.go$\" | head -20)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(./k6/k6-amqp run:*)",
+      "Bash(ls ~/go/pkg/mod/github.com/grafana/xk6-amqp@v0.4.1/examples/ && cat ~/go/pkg/mod/github.com/grafana/xk6-amqp@v0.4.1/examples/*.js 2>/dev/null || cat ~/go/pkg/mod/github.com/grafana/xk6-amqp@v0.4.1/examples/*.ts 2>/dev/null)",
+      "Bash(git init:*)"
+    ]
+  }
+}

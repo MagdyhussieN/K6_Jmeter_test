@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="RabbitMQ Load Test Plan" enabled="true">
+      <stringProp name="TestPlan.comments">Direct AMQP load test against RabbitMQ using jmeter-amqp plugin.
+Requires: com.zeroclue:jmeter-amqp-plugin jar in $JMETER_HOME/lib/ext/
+See: jmeter/plugins/README.md</stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="RABBITMQ_HOST" elementType="Argument">
+            <stringProp name="Argument.name">RABBITMQ_HOST</stringProp>
+            <stringProp name="Argument.value">${__P(RABBITMQ_HOST,localhost)}</stringProp>
+          </elementProp>
+          <elementProp name="RABBITMQ_PORT" elementType="Argument">
+            <stringProp name="Argument.name">RABBITMQ_PORT</stringProp>
+            <stringProp name="Argument.value">${__P(RABBITMQ_PORT,5672)}</stringProp>
+          </elementProp>
+          <elementProp name="RABBITMQ_VHOST" elementType="Argument">
+            <stringProp name="Argument.name">RABBITMQ_VHOST</stringProp>
+            <stringProp name="Argument.value">/</stringProp>
+          </elementProp>
+          <elementProp name="RABBITMQ_USER" elementType="Argument">
+            <stringProp name="Argument.name">RABBITMQ_USER</stringProp>
+            <stringProp name="Argument.value">guest</stringProp>
+          </elementProp>
+          <elementProp name="RABBITMQ_PASS" elementType="Argument">
+            <stringProp name="Argument.name">RABBITMQ_PASS</stringProp>
+            <stringProp name="Argument.value">guest</stringProp>
+          </elementProp>
+          <elementProp name="EXCHANGE_NAME" elementType="Argument">
+            <stringProp name="Argument.name">EXCHANGE_NAME</stringProp>
+            <stringProp name="Argument.value">load-test-exchange</stringProp>
+          </elementProp>
+          <elementProp name="QUEUE_NAME" elementType="Argument">
+            <stringProp name="Argument.name">QUEUE_NAME</stringProp>
+            <stringProp name="Argument.value">load-test-queue</stringProp>
+          </elementProp>
+          <elementProp name="ROUTING_KEY" elementType="Argument">
+            <stringProp name="Argument.name">ROUTING_KEY</stringProp>
+            <stringProp name="Argument.value">load-test</stringProp>
+          </elementProp>
+        </collectionProp>
+      </elementProp>
+    </TestPlan>
+    <hashTree>
+
+      <!-- ============================================================ -->
+      <!-- THREAD GROUP 1: AMQP Publisher (Direct Protocol Load Test)   -->
+      <!-- ============================================================ -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="AMQP Publisher - Load Test" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">100</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">50</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">30</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+      </ThreadGroup>
+      <hashTree>
+
+        <!-- AMQP Publisher Sampler -->
+        <GenericSampler guiclass="GenericSamplerGui" testclass="GenericSampler" testname="AMQP Publish Message" enabled="true">
+          <stringProp name="GenericSampler.requestData">{"message": "jmeter-load-test-${__UUID()}", "timestamp": "${__time(yyyy-MM-dd HH:mm:ss.SSS)}"}</stringProp>
+        </GenericSampler>
+        <hashTree>
+          <!--
+            NOTE: Replace GenericSampler above with com.zeroclue.jmeter.protocol.amqp.AMQPPublisher
+            once the plugin jar is installed. The plugin sampler config:
+
+            Host: ${RABBITMQ_HOST}
+            Port: ${RABBITMQ_PORT}
+            Virtual Host: ${RABBITMQ_VHOST}
+            Username: ${RABBITMQ_USER}
+            Password: ${RABBITMQ_PASS}
+            Exchange: ${EXCHANGE_NAME}
+            Routing Key: ${ROUTING_KEY}
+            Message: {"message": "jmeter-load-test-${__UUID()}", "ts": "${__time()}"}
+            Message TTL: 3600000
+            Persistent: true
+            Content Type: application/json
+          -->
+        </hashTree>
+
+        <!-- Response Assertion -->
+        <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert No Error" enabled="true">
+          <collectionProp name="Asserion.test_strings">
+            <stringProp name="49586">ERROR</stringProp>
+          </collectionProp>
+          <stringProp name="Assertion.custom_message">Publish failed</stringProp>
+          <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+          <boolProp name="Assertion.assume_success">false</boolProp>
+          <intProp name="Assertion.test_type">6</intProp>
+        </ResponseAssertion>
+        <hashTree/>
+
+        <!-- Constant Timer: think time -->
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think Time 100ms" enabled="true">
+          <stringProp name="ConstantTimer.delay">100</stringProp>
+        </ConstantTimer>
+        <hashTree/>
+
+      </hashTree>
+
+      <!-- ============================================================ -->
+      <!-- THREAD GROUP 2: AMQP Consumer (Direct Protocol Load Test)    -->
+      <!-- ============================================================ -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="AMQP Consumer - Load Test" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">50</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">10</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">15</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+      </ThreadGroup>
+      <hashTree>
+
+        <!-- AMQP Consumer Sampler -->
+        <GenericSampler guiclass="GenericSamplerGui" testclass="GenericSampler" testname="AMQP Consume Message" enabled="true">
+          <stringProp name="GenericSampler.requestData">CONSUME from ${QUEUE_NAME}</stringProp>
+        </GenericSampler>
+        <hashTree>
+          <!--
+            NOTE: Replace GenericSampler above with com.zeroclue.jmeter.protocol.amqp.AMQPConsumer
+            once the plugin jar is installed. The plugin sampler config:
+
+            Host: ${RABBITMQ_HOST}
+            Port: ${RABBITMQ_PORT}
+            Virtual Host: ${RABBITMQ_VHOST}
+            Username: ${RABBITMQ_USER}
+            Password: ${RABBITMQ_PASS}
+            Queue: ${QUEUE_NAME}
+            Receive Timeout: 2000
+            Prefetch Count: 10
+            Auto Ack: false
+          -->
+        </hashTree>
+
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think Time 200ms" enabled="true">
+          <stringProp name="ConstantTimer.delay">200</stringProp>
+        </ConstantTimer>
+        <hashTree/>
+
+      </hashTree>
+
+      <!-- ============================================================ -->
+      <!-- THREAD GROUP 3: HTTP Backend Load Test (no plugin required)  -->
+      <!-- ============================================================ -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="HTTP Backend - Produce via REST" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">100</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">50</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">30</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+      </ThreadGroup>
+      <hashTree>
+
+        <!-- HTTP Config -->
+        <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__P(BACKEND_HOST,localhost)}</stringProp>
+          <stringProp name="HTTPSampler.port">${__P(BACKEND_PORT,3000)}</stringProp>
+          <stringProp name="HTTPSampler.protocol">http</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>
+          <stringProp name="HTTPSampler.response_timeout">10000</stringProp>
+        </ConfigTestElement>
+        <hashTree/>
+
+        <!-- Header Manager -->
+        <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Headers" enabled="true">
+          <collectionProp name="HeaderManager.headers">
+            <elementProp name="" elementType="Header">
+              <stringProp name="Header.name">Content-Type</stringProp>
+              <stringProp name="Header.value">application/json</stringProp>
+            </elementProp>
+          </collectionProp>
+        </HeaderManager>
+        <hashTree/>
+
+        <!-- POST /produce -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /produce" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{"message": "jmeter-http-${__UUID()}", "count": 1}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">/produce</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+
+          <!-- Assert HTTP 200 -->
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert HTTP 200" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">8</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+
+          <!-- Assert published field in body -->
+          <JSONPathAssertion guiclass="JSONPathAssertionGui" testclass="JSONPathAssertion" testname="Assert published field" enabled="true">
+            <stringProp name="JSON_PATH">$.published</stringProp>
+            <stringProp name="EXPECTED_VALUE">1</stringProp>
+            <boolProp name="JSONVALIDATION">true</boolProp>
+            <boolProp name="EXPECT_NULL">false</boolProp>
+            <boolProp name="INVERT">false</boolProp>
+            <boolProp name="ISREGEX">false</boolProp>
+          </JSONPathAssertion>
+          <hashTree/>
+
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think Time 100ms" enabled="true">
+            <stringProp name="ConstantTimer.delay">100</stringProp>
+          </ConstantTimer>
+          <hashTree/>
+
+        </hashTree>
+
+        <!-- GET /consume -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /consume" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="count" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.name">count</stringProp>
+                <stringProp name="Argument.value">10</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <boolProp name="HTTPArgument.use_equals">true</boolProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">/consume</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert HTTP 200" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">8</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think Time 200ms" enabled="true">
+            <stringProp name="ConstantTimer.delay">200</stringProp>
+          </ConstantTimer>
+          <hashTree/>
+
+        </hashTree>
+
+      </hashTree>
+
+      <!-- ============================================================ -->
+      <!-- LISTENERS                                                     -->
+      <!-- ============================================================ -->
+      <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename">jmeter/results/results.jtl</stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+      <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+          </value>
+        </objProp>
+        <stringProp name="filename">jmeter/results/aggregate.jtl</stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

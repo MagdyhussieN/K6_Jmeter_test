@@ -1,0 +1,8 @@
+{
+  "vus": 1,
+  "duration": "30s",
+  "thresholds": {
+    "rabbitmq_publish_failures": ["rate<0.01"],
+    "rabbitmq_publish_duration_ms": ["p(95)<500"]
+  }
+}
